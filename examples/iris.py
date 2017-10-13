@@ -3,6 +3,21 @@ from sklearn.datasets import load_iris
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.externals.six import StringIO
+from sklearn import tree
+import pydot
+
+
+def vizualize_tree(t, feature_names, class_names):
+    dot_data = StringIO()
+    tree.export_graphviz(t, out_file=dot_data,
+                             feature_names=feature_names,
+                             class_names=class_names,
+                             filled=True, rounded=True,
+                             special_characters=True)
+    graph = pydot.graph_from_dot_data(dot_data.getvalue())
+    graph.create_png()
+
 
 iris = load_iris()
 X = iris.data
@@ -23,3 +38,4 @@ params = {
 }
 
 sklearn2pmml(estimator=model, file='iris.pmml', **params)
+tree.export_graphviz(model.estimators_[0], out_file='tree.dot')
