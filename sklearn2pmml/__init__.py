@@ -115,6 +115,8 @@ def _generate_tree(tree_model, estimator, feature_names):
             predicate.set('operator', operator)
             predicate.set('value', str(tree.threshold[parent_id]))
             predicate.set('field', feature_names[tree.feature[parent_id]])
+        else:
+            ET.SubElement(node, 'True')
         for target_value, cnt_records in enumerate(values):
             score_distribution = ET.SubElement(node, 'ScoreDistribution')
             score_distribution.set('value', str(target_value))
