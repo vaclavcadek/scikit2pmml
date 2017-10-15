@@ -68,7 +68,7 @@ def _generate_mining_model(root, estimator, transformer, feature_names, target_n
         mining_model.set('modelName', model_name)
     _generate_mining_schema(mining_model, feature_names, target_name)
     _generate_output(mining_model, target_values)
-    _generate_segmentation(mining_model, estimator, feature_names)
+    _generate_segmentation(mining_model, estimator, feature_names, target_name)
     return mining_model
 
 
@@ -78,10 +78,10 @@ def _generate_mining_schema(mining_model, feature_names, target_name):
     if target_name:
         mining_field.set('name', target_name)
         mining_field.set('usageType', 'target')
-        for f in feature_names:
-            mining_field = ET.SubElement(mining_schema, 'MiningField')
-            mining_field.set('name', f)
-            mining_field.set('usageType', 'active')
+    for f in feature_names:
+        mining_field = ET.SubElement(mining_schema, 'MiningField')
+        mining_field.set('name', f)
+        mining_field.set('usageType', 'active')
     return mining_schema
 
 
@@ -95,33 +95,32 @@ def _generate_output(mining_model, target_values):
     return output
 
 
-def _generate_tree(tree_model, estimator):
+def _generate_tree(tree_model, estimator, feature_names):
 
-    def recurse(tree, node_id, parent, depth=0):
+    def split(tree, node_id, parent_id, operator, parent):
+        node = ET.SubElement(parent, 'Node')
+        node.set('id', str(node_id))
         left_child = tree.children_left[node_id]
         right_child = tree.children_right[node_id]
-        for child in [left_child, right_child]:
-            node = ET.SubElement(parent, 'Node')
-            node.set('id', str(child))
-            if child != _tree.TREE_LEAF:
-                predicate = ET.SubElement(node, 'SimplePredicate')
-                predicate.set('operator', 'lessOrEqual')
-                predicate.set('value', str(tree.threshold[child]))
-                predicate.set('field', 'field_id')
-                recurse(tree, child, node, depth=depth + 1)
-            else:
-                for target_value, cnt_records in enumerate(tree.value[node_id][0]):
-                    score_distribution = ET.SubElement(node, 'ScoreDistribution')
-                    score_distribution.set('value', str(target_value))
-                    score_distribution.set('recordCount', str(cnt_records))
+        values = tree.value[node_id][0]
+        node.set('recordCount', str(sum(values)))
+        if operator:
+            predicate = ET.SubElement(node, 'SimplePredicate')
+            predicate.set('operator', operator)
+            predicate.set('value', str(tree.threshold[parent_id]))
+            predicate.set('field', feature_names[tree.feature[parent_id]])
+        for target_value, cnt_records in enumerate(values):
+            score_distribution = ET.SubElement(node, 'ScoreDistribution')
+            score_distribution.set('value', str(target_value))
+            score_distribution.set('recordCount', str(cnt_records))
+        if left_child != _tree.TREE_LEAF:
+            split(tree, left_child, node_id, 'lessOrEqual', node)
+            split(tree, right_child, node_id, 'greaterThan', node)
 
-    root = ET.SubElement(tree_model, 'Node')
-    root.set('id', str(0))
-    recurse(estimator.tree_, 0, root)
-    return root
+    split(estimator.tree_, 0, 0, None, tree_model)
 
 
-def _generate_segmentation(mining_model, estimator, feature_names):
+def _generate_segmentation(mining_model, estimator, feature_names, target_name):
 
     segmentation = ET.SubElement(mining_model, 'Segmentation')
     segmentation.set('multipleModelMethod', 'average')
@@ -129,8 +128,9 @@ def _generate_segmentation(mining_model, estimator, feature_names):
         segment = ET.SubElement(segmentation, 'Segment')
         segment.set('id', str(i))
         tree_model = ET.SubElement(segment, 'TreeModel')
-        _generate_mining_schema(tree_model, feature_names, [])
-        _generate_tree(tree_model, e)
+        tree_model.set('splitCharacteristic', 'binarySplit')
+        _generate_mining_schema(tree_model, feature_names, target_name)
+        _generate_tree(tree_model, e, feature_names)
 
 
 def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
