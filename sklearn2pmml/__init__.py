@@ -6,6 +6,7 @@ from datetime import datetime
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import _tree
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
+import numpy as np
 
 SUPPORTED_MODELS = frozenset([RandomForestClassifier])
 SUPPORTED_TRANSFORMERS = frozenset([StandardScaler, MinMaxScaler])
@@ -74,7 +75,7 @@ def _generate_mining_model(root, estimator, transformer, feature_names, target_n
         mining_model.set('modelName', model_name)
     _generate_mining_schema(mining_model, feature_names, target_name)
     _generate_output(mining_model, target_values)
-    _generate_segmentation(mining_model, estimator, feature_names, target_name)
+    _generate_segmentation(mining_model, estimator, feature_names, target_name, target_values)
     return mining_model
 
 
@@ -101,7 +102,7 @@ def _generate_output(mining_model, target_values):
     return output
 
 
-def _generate_tree(tree_model, estimator, feature_names):
+def _generate_tree(tree_model, estimator, feature_names, target_values):
 
     def split(tree, node_id, parent_id, operator, parent):
         node = ET.SubElement(parent, 'Node')
@@ -110,6 +111,7 @@ def _generate_tree(tree_model, estimator, feature_names):
         right_child = tree.children_right[node_id]
         values = tree.value[node_id][0]
         node.set('recordCount', str(sum(values)))
+        node.set('score', target_values[np.argmax(values)])
         if operator:
             predicate = ET.SubElement(node, 'SimplePredicate')
             predicate.set('operator', operator)
@@ -117,7 +119,7 @@ def _generate_tree(tree_model, estimator, feature_names):
             predicate.set('field', feature_names[tree.feature[parent_id]])
         else:
             ET.SubElement(node, 'True')
-        for target_value, cnt_records in enumerate(values):
+        for target_value, cnt_records in zip(target_values, values):
             score_distribution = ET.SubElement(node, 'ScoreDistribution')
             score_distribution.set('value', str(target_value))
             score_distribution.set('recordCount', str(cnt_records))
@@ -128,7 +130,7 @@ def _generate_tree(tree_model, estimator, feature_names):
     split(estimator.tree_, 0, 0, None, tree_model)
 
 
-def _generate_segmentation(mining_model, estimator, feature_names, target_name):
+def _generate_segmentation(mining_model, estimator, feature_names, target_name, target_values):
 
     segmentation = ET.SubElement(mining_model, 'Segmentation')
     segmentation.set('multipleModelMethod', 'average')
@@ -138,8 +140,9 @@ def _generate_segmentation(mining_model, estimator, feature_names, target_name):
         ET.SubElement(segment, 'True')
         tree_model = ET.SubElement(segment, 'TreeModel')
         tree_model.set('splitCharacteristic', 'binarySplit')
+        tree_model.set('functionName', 'classification')
         _generate_mining_schema(tree_model, feature_names, target_name)
-        _generate_tree(tree_model, e, feature_names)
+        _generate_tree(tree_model, e, feature_names, target_values)
 
 
 def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
