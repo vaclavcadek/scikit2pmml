@@ -133,6 +133,7 @@ def _generate_segmentation(mining_model, estimator, feature_names, target_name):
     for i, e in enumerate(estimator.estimators_):
         segment = ET.SubElement(segmentation, 'Segment')
         segment.set('id', str(i))
+        ET.SubElement(segment, 'True')
         tree_model = ET.SubElement(segment, 'TreeModel')
         tree_model.set('splitCharacteristic', 'binarySplit')
         _generate_mining_schema(tree_model, feature_names, target_name)
