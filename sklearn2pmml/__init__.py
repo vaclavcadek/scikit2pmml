@@ -9,6 +9,12 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 SUPPORTED_MODELS = frozenset([RandomForestClassifier])
 SUPPORTED_TRANSFORMERS = frozenset([StandardScaler, MinMaxScaler])
+SUPPORTED_NS = {
+    '4.1': 'http://www.dmg.org/PMML-4_1',
+    '4.2': 'http://www.dmg.org/PMML-4_2',
+    '4.2.1': 'http://www.dmg.org/PMML-4_2-',
+    '4.3': 'http://www.dmg.org/PMML-4_3'
+}
 
 
 def _validate_inputs(model, transformer, feature_names, target_values):
@@ -148,12 +154,13 @@ def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
     target_name = kwargs.get('target_name', 'class')
     target_values = kwargs.get('target_values', [])
     model_name = kwargs.get('model_name', None)
+    pmml_version = kwargs.get('version', '4.2')
 
     feature_names, target_values = _validate_inputs(estimator, transformer, feature_names, target_values)
 
     pmml = ET.Element('PMML')
-    pmml.set('version', '4.3')
-    pmml.set('xmlns', 'http://www.dmg.org/PMML-4_3')
+    pmml.set('version', pmml_version)
+    pmml.set('xmlns', SUPPORTED_NS.get(pmml_version, 'http://www.dmg.org/PMML-4_2'))
     _generate_header(pmml, kwargs)
     _generate_data_dictionary(pmml, feature_names, target_name, target_values)
     _generate_mining_model(pmml, estimator, transformer, feature_names, target_name, target_values, model_name)

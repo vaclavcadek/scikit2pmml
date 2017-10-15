@@ -12,6 +12,7 @@ model = RandomForestClassifier(max_depth=2, n_estimators=1, random_state=0, boot
 model.fit(X, y)
 
 params = {
+    'pmml_version': '4.2',
     'feature_names': ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
     'target_values': ['setosa', 'virginica', 'versicolor'],
     'target_name': 'specie',
