@@ -1,13 +1,13 @@
 from sklearn2pmml import sklearn2pmml
 from sklearn.datasets import load_breast_cancer
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 cancer = load_breast_cancer()
-X = cancer.data
+X = cancer.data.astype(np.float32)
 y = cancer.target.astype(np.int32)
 
-model = RandomForestClassifier(max_depth=6, n_estimators=100, random_state=0)
+model = DecisionTreeClassifier(max_depth=4)
 model.fit(X, y)
 
 params = {
@@ -16,7 +16,7 @@ params = {
     'target_values': cancer.target_names,
     'target_name': 'tumor_type',
     'copyright': 'Václav Čadek',
-    'description': cancer.DESCR,
+    'description': 'Simple Decision Tree model.',
     'model_name': 'Breast Cancer Model'
 }
 

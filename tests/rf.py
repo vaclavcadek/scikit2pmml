@@ -23,7 +23,7 @@ class GenericFieldsTestCase(unittest.TestCase):
         self.num_inputs = model.n_features_
         self.num_outputs = model.n_classes_
         self.features = ['x{}'.format(i) for i in range(self.num_inputs)]
-        self.class_values = ['y{}'.format(i) for i in range(self.num_outputs)]
+        self.class_names = ['y{}'.format(i) for i in range(self.num_outputs)]
 
     def test_data_dict(self):
         continuous_fields = self.pmml.findall("DataDictionary/DataField/[@optype='continuous']")
@@ -36,7 +36,7 @@ class GenericFieldsTestCase(unittest.TestCase):
         self.assertEqual(len(output_values), self.num_outputs, 'Correct number of output values.')
         self.assertListEqual(
             [ov.attrib['value'] for ov in output_values],
-            self.class_values
+            self.class_names
         )
         self.assertListEqual(
             [ov.attrib['name'] for ov in continuous_fields],
@@ -44,8 +44,8 @@ class GenericFieldsTestCase(unittest.TestCase):
         )
 
     def test_mining_schema(self):
-        target_field = self.pmml.findall("MiningModel/Segmentation/MiningSchema/MiningField/[@usageType='target']")
-        active_fields = self.pmml.findall("MiningModel/Segmentation/MiningSchema/MiningField/[@usageType='active']")
+        target_field = self.pmml.findall("MiningModel/MiningSchema/MiningField/[@usageType='target']")
+        active_fields = self.pmml.findall("MiningModel/MiningSchema/MiningField/[@usageType='active']")
         self.assertEquals(len(active_fields), self.num_inputs, 'Correct number of active fields.')
         self.assertEquals(len(target_field), 1, 'Exactly one target field in mining schema.')
         target_name = target_field[0].attrib.get('name', None)
@@ -60,7 +60,7 @@ class GenericFieldsTestCase(unittest.TestCase):
         self.assertEqual(len(output_fields), self.num_outputs, 'Correct number of output fields.')
         self.assertListEqual(
             [of.attrib['name'] for of in output_fields],
-            ['probability_{}'.format(v) for v in self.class_values]
+            ['probability_{}'.format(v) for v in self.class_names]
         )
 
     def test_model(self):

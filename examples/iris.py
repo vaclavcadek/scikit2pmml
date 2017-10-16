@@ -4,10 +4,10 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
 iris = load_iris()
-X = iris.data
+X = iris.data.astype(np.float32)
 y = iris.target.astype(np.int32)
 
-model = RandomForestClassifier(max_depth=4, n_estimators=1, random_state=0, bootstrap=False)
+model = RandomForestClassifier(max_depth=2, n_estimators=1, bootstrap=False, random_state=0)
 model.fit(X, y)
 
 params = {
@@ -16,7 +16,7 @@ params = {
     'target_values': iris.target_names,
     'target_name': 'specie',
     'copyright': 'Václav Čadek',
-    'description': 'Simple RF model for Iris dataset.',
+    'description': 'Simple Iris RF model.',
     'model_name': 'Iris Model'
 }
 
