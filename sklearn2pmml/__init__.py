@@ -4,7 +4,7 @@ except ImportError:
     import xml.etree.ElementTree as ET
 from sklearn2pmml.models.tree import TreeModel
 from datetime import datetime
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import logging
@@ -13,7 +13,11 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
-SUPPORTED_MODELS = frozenset([DecisionTreeClassifier, RandomForestClassifier])
+SUPPORTED_MODELS = frozenset([
+    DecisionTreeClassifier,
+    RandomForestClassifier,
+    ExtraTreesClassifier
+])
 SUPPORTED_TRANSFORMERS = frozenset([StandardScaler, MinMaxScaler])
 SUPPORTED_NS = {
     '4.1': 'http://www.dmg.org/PMML-4_1',
@@ -41,7 +45,7 @@ class PMMLDocument:
     def _get_model(estimator):
         if type(estimator) == DecisionTreeClassifier:
             return TreeModel(estimator)
-        if type(estimator) == RandomForestClassifier:
+        if type(estimator) in [RandomForestClassifier, ExtraTreesClassifier]:
             return [TreeModel(tree) for tree in estimator.estimators_]
 
     def _validate_inputs(self):
