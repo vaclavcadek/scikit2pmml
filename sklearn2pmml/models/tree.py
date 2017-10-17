@@ -11,7 +11,7 @@ class TreeModel:
     def __init__(self, estimator):
         self.tree = estimator.tree_
 
-    def serialize(self, pmml_parent, feature_names, target_names):
+    def serialize(self, parent, feature_names, target_names):
 
         def split(node_id, parent_id, operator, parent):
             node = ET.SubElement(parent, 'Node')
@@ -36,7 +36,7 @@ class TreeModel:
                 split(left_child, node_id, 'lessOrEqual', node)
                 split(right_child, node_id, 'greaterThan', node)
 
-        tree_model = ET.SubElement(pmml_parent, 'TreeModel')
+        tree_model = ET.SubElement(parent, 'TreeModel')
         ET.SubElement(tree_model, 'True')
         tree_model.set('splitCharacteristic', 'binarySplit')
         tree_model.set('functionName', 'classification')

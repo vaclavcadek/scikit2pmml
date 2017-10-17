@@ -23,108 +23,128 @@ SUPPORTED_NS = {
 }
 
 
-def _validate_inputs(model, transformer, feature_names, target_values):
-    logger.info('[x] Performing model validation.')
-    if not type(model) in SUPPORTED_MODELS:
-        raise TypeError("Provided model is not supported.")
-    if not model.fit:
-        raise TypeError("Provide a fitted model.")
-    if transformer is not None and not type(transformer) in SUPPORTED_TRANSFORMERS:
-        raise TypeError("Provided transformer is not supported.")
-    if model.n_features_ != len(feature_names):
-        logger.warning('[!] Network input shape does not match provided feature names - using generic names instead.')
-        feature_names = ['x{}'.format(i) for i in range(model.n_features_)]
-    if model.n_classes_ != len(target_values):
-        logger.warning('[!] Network output shape does not match provided target values - using generic names instead.')
-        target_values = ['y{}'.format(i) for i in range(model.n_classes_)]
-    logger.info('[x] Model validation successful.')
-    return feature_names, target_values
+class PMMLDocument:
 
+    def __init__(self, estimator, transformer, **kwargs):
+        self.estimator = estimator
+        self.transformer = transformer
+        self.feature_names = kwargs.get('feature_names', [])
+        self.target_name = kwargs.get('target_name', 'class')
+        self.target_values = kwargs.get('target_values', [])
+        self.version = kwargs.get('version', '4.2')
+        self.model_name = kwargs.get('model_name', None)
+        self.description = kwargs.get('description', None)
+        self.copyright = kwargs.get('copyright', None)
+        self.root = None
 
-def _generate_header(root, kwargs):
-    description = kwargs.get('description', None)
-    copyright = kwargs.get('copyright', None)
-    header = ET.SubElement(root, 'Header')
-    if copyright:
-        header.set('copyright', copyright)
-    if description:
-        header.set('description', description)
-    timestamp = ET.SubElement(header, 'Timestamp')
-    timestamp.text = str(datetime.now())
-    return header
+    @staticmethod
+    def _get_model(estimator):
+        if type(estimator) == DecisionTreeClassifier:
+            return TreeModel(estimator)
+        if type(estimator) == RandomForestClassifier:
+            return [TreeModel(tree) for tree in estimator.estimators_]
 
+    def _validate_inputs(self):
+        logger.info('[x] Performing model validation.')
+        if not type(self.estimator) in SUPPORTED_MODELS:
+            raise TypeError("Provided model is not supported.")
+        if not self.estimator.fit:
+            raise TypeError("Provide a fitted model.")
+        if self.transformer is not None and not type(self.transformer) in SUPPORTED_TRANSFORMERS:
+            raise TypeError("Provided transformer is not supported.")
+        if self.estimator.n_features_ != len(self.feature_names):
+            logger.warning('[!] Input shape does not match provided feature names - using generic names instead.')
+            self.feature_names = ['x{}'.format(i) for i in range(self.estimator.n_features_)]
+        if self.estimator.n_classes_ != len(self.target_values):
+            logger.warning('[!] Output shape does not match provided target values - using generic names instead.')
+            self.target_values = ['y{}'.format(i) for i in range(self.estimator.n_classes_)]
+        logger.info('[x] Model validation successful.')
 
-def _generate_data_dictionary(root, feature_names, target_name, target_values):
-    data_dict = ET.SubElement(root, 'DataDictionary')
-    data_field = ET.SubElement(data_dict, 'DataField')
-    data_field.set('name', target_name)
-    data_field.set('dataType', 'string')
-    data_field.set('optype', 'categorical')
-    logger.info('[x] Generating Data Dictionary:')
-    for t in target_values:
-        value = ET.SubElement(data_field, 'Value')
-        value.set('value', t)
-    for f in feature_names:
+    def generate_document(self, file):
+        self._validate_inputs()
+        self.root = ET.Element('PMML')
+        self.root.set('version', self.version)
+        self.root.set('xmlns', SUPPORTED_NS.get(self.version, 'http://www.dmg.org/PMML-4_2'))
+        self._generate_header()
+        self._generate_data_dictionary()
+        self._generate_model()
+        tree = ET.ElementTree(self.root)
+        logger.info('[x] Generation of PMML successful.')
+        if file:
+            tree.write(file, encoding='utf-8', xml_declaration=True)
+        return tree
+
+    def _generate_header(self):
+        header = ET.SubElement(self.root, 'Header')
+        if self.copyright:
+            header.set('copyright', self.copyright)
+        if self.description:
+            header.set('description', self.description)
+        timestamp = ET.SubElement(header, 'Timestamp')
+        timestamp.text = str(datetime.now())
+        return header
+
+    def _generate_data_dictionary(self):
+        data_dict = ET.SubElement(self.root, 'DataDictionary')
         data_field = ET.SubElement(data_dict, 'DataField')
-        data_field.set('name', f)
-        data_field.set('dataType', 'double')
-        data_field.set('optype', 'continuous')
-        logger.info('\t[-] {}...OK!'.format(f))
-    return data_dict
+        data_field.set('name', self.target_name)
+        data_field.set('dataType', 'string')
+        data_field.set('optype', 'categorical')
+        logger.info('[x] Generating Data Dictionary:')
+        for t in self.target_values:
+            value = ET.SubElement(data_field, 'Value')
+            value.set('value', t)
+        for f in self.feature_names:
+            data_field = ET.SubElement(data_dict, 'DataField')
+            data_field.set('name', f)
+            data_field.set('dataType', 'double')
+            data_field.set('optype', 'continuous')
+            logger.info('\t[-] {}...OK!'.format(f))
+        return data_dict
 
+    def _generate_model(self):
+        model = self._get_model(self.estimator)
+        if type(model) == list:
+            mining_model = ET.SubElement(self.root, 'MiningModel')
+            mining_model.set('functionName', 'classification')
+            if self.model_name:
+                mining_model.set('modelName', self.model_name)
+            self._generate_mining_schema(mining_model)
+            self._generate_output(mining_model)
+            segmentation = ET.SubElement(mining_model, 'Segmentation')
+            segmentation.set('multipleModelMethod', 'average')
+            for i, m in enumerate(model):
+                segment = ET.SubElement(segmentation, 'Segment')
+                segment.set('id', str(i))
+                ET.SubElement(segment, 'True')
+                model_element = m.serialize(segment, self.feature_names, self.target_values)
+                self._generate_mining_schema(model_element)
+            return mining_model
+        else:
+            model_element = model.serialize(self.root, self.feature_names, self.target_values)
+            self._generate_mining_schema(model_element)
+            return model_element
 
-def _generate_model(root, estimator, feature_names, target_name, target_names, model_name=None):
-    model = _get_model(estimator)
-    if type(model) == list:
-        mining_model = ET.SubElement(root, 'MiningModel')
-        mining_model.set('functionName', 'classification')
-        if model_name:
-            mining_model.set('modelName', model_name)
-        _generate_mining_schema(mining_model, feature_names, target_name)
-        _generate_output(mining_model, target_names)
-        segmentation = ET.SubElement(mining_model, 'Segmentation')
-        segmentation.set('multipleModelMethod', 'average')
-        for i, m in enumerate(model):
-            segment = ET.SubElement(segmentation, 'Segment')
-            segment.set('id', str(i))
-            ET.SubElement(segment, 'True')
-            model_element = m.serialize(segment, feature_names, target_names)
-            _generate_mining_schema(model_element, feature_names, target_name)
-        return mining_model
-    else:
-        model_element = model.serialize(root, feature_names, target_names)
-        _generate_mining_schema(model_element, feature_names, target_name)
-        return model_element
-
-
-def _generate_mining_schema(parent_element, feature_names, target_name):
-    mining_schema = ET.SubElement(parent_element, 'MiningSchema')
-    mining_field = ET.SubElement(mining_schema, 'MiningField')
-    if target_name:
-        mining_field.set('name', target_name)
-        mining_field.set('usageType', 'target')
-    for f in feature_names:
+    def _generate_mining_schema(self, parent):
+        mining_schema = ET.SubElement(parent, 'MiningSchema')
         mining_field = ET.SubElement(mining_schema, 'MiningField')
-        mining_field.set('name', f)
-        mining_field.set('usageType', 'active')
-    return mining_schema
+        if self.target_name:
+            mining_field.set('name', self.target_name)
+            mining_field.set('usageType', 'target')
+        for f in self.feature_names:
+            mining_field = ET.SubElement(mining_schema, 'MiningField')
+            mining_field.set('name', f)
+            mining_field.set('usageType', 'active')
+        return mining_schema
 
-
-def _generate_output(parent_element, target_values):
-    output = ET.SubElement(parent_element, 'Output')
-    for t in target_values:
-        output_field = ET.SubElement(output, 'OutputField')
-        output_field.set('name', 'probability_{}'.format(t))
-        output_field.set('feature', 'probability')
-        output_field.set('value', t)
-    return output
-
-
-def _get_model(estimator):
-    if type(estimator) == DecisionTreeClassifier:
-        return TreeModel(estimator)
-    if type(estimator) == RandomForestClassifier:
-        return [TreeModel(tree) for tree in estimator.estimators_]
+    def _generate_output(self, parent):
+        output = ET.SubElement(parent, 'Output')
+        for t in self.target_values:
+            output_field = ET.SubElement(output, 'OutputField')
+            output_field.set('name', 'probability_{}'.format(t))
+            output_field.set('feature', 'probability')
+            output_field.set('value', t)
+        return output
 
 
 def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
@@ -138,23 +158,7 @@ def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
     :return: XML element tree
     """
 
-    feature_names = kwargs.get('feature_names', [])
-    target_name = kwargs.get('target_name', 'class')
-    target_values = kwargs.get('target_values', [])
-    model_name = kwargs.get('model_name', None)
-    pmml_version = kwargs.get('version', '4.2')
+    document = PMMLDocument(estimator, transformer, **kwargs)
+    return document.generate_document(file)
 
-    feature_names, target_values = _validate_inputs(estimator, transformer, feature_names, target_values)
 
-    pmml = ET.Element('PMML')
-    pmml.set('version', pmml_version)
-    pmml.set('xmlns', SUPPORTED_NS.get(pmml_version, 'http://www.dmg.org/PMML-4_2'))
-    _generate_header(pmml, kwargs)
-    _generate_data_dictionary(pmml, feature_names, target_name, target_values)
-    _generate_model(pmml, estimator, feature_names, target_name, target_values, model_name)
-
-    tree = ET.ElementTree(pmml)
-    logger.info('[x] Generation of PMML successful.')
-    if file:
-        tree.write(file, encoding='utf-8', xml_declaration=True)
-    return tree
