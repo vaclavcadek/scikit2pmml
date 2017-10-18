@@ -7,7 +7,7 @@ iris = load_iris()
 X = iris.data.astype(np.float32)
 y = iris.target.astype(np.int32)
 
-model = RandomForestClassifier(max_depth=2, n_estimators=1, bootstrap=False, random_state=0)
+model = RandomForestClassifier(max_depth=2, n_estimators=10, bootstrap=False, random_state=0)
 model.fit(X, y)
 
 params = {

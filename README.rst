@@ -33,28 +33,27 @@ Example on Iris data - for more examples see the examples folder.
     from sklearn2pmml import sklearn2pmml
     from sklearn.datasets import load_iris
     import numpy as np
-    from sklearn.model_selection import train_test_split
     from sklearn.ensemble import RandomForestClassifier
 
     iris = load_iris()
-    X = iris.data
+    X = iris.data.astype(np.float32)
     y = iris.target.astype(np.int32)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3)
-
-    model = RandomForestClassifier(max_depth=4)
-    model.fit(X_train, y_train)
+    model = RandomForestClassifier(max_depth=2, n_estimators=10, bootstrap=False, random_state=0)
+    model.fit(X, y)
 
     params = {
-        'feature_names': ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'],
-        'target_values': ['setosa', 'virginica', 'versicolor'],
+        'pmml_version': '4.2',
+        'feature_names': iris.feature_names,
+        'target_values': iris.target_names,
         'target_name': 'specie',
         'copyright': 'Václav Čadek',
-        'description': 'Simple Keras model for Iris dataset.',
+        'description': 'Simple Iris RF model.',
         'model_name': 'Iris Model'
     }
 
     sklearn2pmml(estimator=model, file='iris.pmml', **params)
+
 
 
 
@@ -72,8 +71,15 @@ Params explained
 
 What is supported?
 ------------------
+- Linear Model
+    * sklearn.linear_model.LinearRegression
+    * sklearn.linear_model.LogisticRegression
+- Tree
+    * sklearn.tree.DecisionTree
+    * sklearn.tree.ExtraTreeClassifier
 - Ensemble
     * sklearn.ensemble.RandomForestClassifier
+    * sklearn.ensemble.ExtraTreesClassifier
 - Scalers
     * sklearn.preprocessing.StandardScaler
     * sklearn.preprocessing.MinMaxScaler

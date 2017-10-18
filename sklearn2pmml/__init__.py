@@ -3,21 +3,18 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 from sklearn2pmml.models.tree import TreeModel
+from sklearn2pmml.models.ensemble import Segmentation
+from sklearn2pmml.models.regression import RegressionModel
 from datetime import datetime
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-
-SUPPORTED_MODELS = frozenset([
-    DecisionTreeClassifier,
-    RandomForestClassifier,
-    ExtraTreesClassifier
-])
 SUPPORTED_TRANSFORMERS = frozenset([StandardScaler, MinMaxScaler])
 SUPPORTED_NS = {
     '4.1': 'http://www.dmg.org/PMML-4_1',
@@ -40,28 +37,31 @@ class PMMLDocument:
         self.description = kwargs.get('description', None)
         self.copyright = kwargs.get('copyright', None)
         self.root = None
+        self.serializer = self._get_serializer(estimator)
 
-    @staticmethod
-    def _get_model(estimator):
-        if type(estimator) == DecisionTreeClassifier:
-            return TreeModel(estimator)
+    def _get_serializer(self, estimator):
+        if type(estimator) == LinearRegression:
+            return RegressionModel(estimator, self, 'regression', 'linearRegression')
+        if type(estimator) == LogisticRegression:
+            return RegressionModel(estimator, self, 'classification', 'logisticRegression')
+        if type(estimator) in [DecisionTreeClassifier, ExtraTreeClassifier]:
+            return TreeModel(estimator, self, 'classification')
         if type(estimator) in [RandomForestClassifier, ExtraTreesClassifier]:
-            return [TreeModel(tree) for tree in estimator.estimators_]
+            return Segmentation(estimator, self, 'classification')
+        raise TypeError("Provided model is not supported.")
 
     def _validate_inputs(self):
         logger.info('[x] Performing model validation.')
-        if not type(self.estimator) in SUPPORTED_MODELS:
-            raise TypeError("Provided model is not supported.")
         if not self.estimator.fit:
             raise TypeError("Provide a fitted model.")
         if self.transformer is not None and not type(self.transformer) in SUPPORTED_TRANSFORMERS:
             raise TypeError("Provided transformer is not supported.")
-        if self.estimator.n_features_ != len(self.feature_names):
+        if self.serializer.n_features != len(self.feature_names):
             logger.warning('[!] Input shape does not match provided feature names - using generic names instead.')
-            self.feature_names = ['x{}'.format(i) for i in range(self.estimator.n_features_)]
-        if self.estimator.n_classes_ != len(self.target_values):
+            self.feature_names = ['x{}'.format(i) for i in range(self.serializer.n_features)]
+        if self.serializer.function_name == 'classification' and self.serializer.n_classes != len(self.target_values):
             logger.warning('[!] Output shape does not match provided target values - using generic names instead.')
-            self.target_values = ['y{}'.format(i) for i in range(self.estimator.n_classes_)]
+            self.target_values = ['y{}'.format(i) for i in range(self.serializer.n_classes)]
         logger.info('[x] Model validation successful.')
 
     def generate_document(self, file):
@@ -69,17 +69,18 @@ class PMMLDocument:
         self.root = ET.Element('PMML')
         self.root.set('version', self.version)
         self.root.set('xmlns', SUPPORTED_NS.get(self.version, 'http://www.dmg.org/PMML-4_2'))
-        self._generate_header()
-        self._generate_data_dictionary()
-        self._generate_model()
+        self.root.append(self.header)
+        self.root.append(self.data_dictionary)
+        self.root.append(self.model)
         tree = ET.ElementTree(self.root)
         logger.info('[x] Generation of PMML successful.')
         if file:
             tree.write(file, encoding='utf-8', xml_declaration=True)
         return tree
 
-    def _generate_header(self):
-        header = ET.SubElement(self.root, 'Header')
+    @property
+    def header(self):
+        header = ET.Element('Header')
         if self.copyright:
             header.set('copyright', self.copyright)
         if self.description:
@@ -88,12 +89,13 @@ class PMMLDocument:
         timestamp.text = str(datetime.now())
         return header
 
-    def _generate_data_dictionary(self):
-        data_dict = ET.SubElement(self.root, 'DataDictionary')
+    @property
+    def data_dictionary(self):
+        data_dict = ET.Element('DataDictionary')
         data_field = ET.SubElement(data_dict, 'DataField')
         data_field.set('name', self.target_name)
-        data_field.set('dataType', 'string')
-        data_field.set('optype', 'categorical')
+        data_field.set('dataType', 'string' if self.serializer.function_name == 'classification' else 'double')
+        data_field.set('optype', 'categorical' if self.serializer.function_name == 'classification' else 'continuous')
         logger.info('[x] Generating Data Dictionary:')
         for t in self.target_values:
             value = ET.SubElement(data_field, 'Value')
@@ -106,49 +108,10 @@ class PMMLDocument:
             logger.info('\t[-] {}...OK!'.format(f))
         return data_dict
 
-    def _generate_model(self):
-        model = self._get_model(self.estimator)
-        if type(model) == list:
-            mining_model = ET.SubElement(self.root, 'MiningModel')
-            mining_model.set('functionName', 'classification')
-            if self.model_name:
-                mining_model.set('modelName', self.model_name)
-            self._generate_mining_schema(mining_model)
-            self._generate_output(mining_model)
-            segmentation = ET.SubElement(mining_model, 'Segmentation')
-            segmentation.set('multipleModelMethod', 'average')
-            for i, m in enumerate(model):
-                segment = ET.SubElement(segmentation, 'Segment')
-                segment.set('id', str(i))
-                ET.SubElement(segment, 'True')
-                model_element = m.serialize(segment, self.feature_names, self.target_values)
-                self._generate_mining_schema(model_element)
-            return mining_model
-        else:
-            model_element = model.serialize(self.root, self.feature_names, self.target_values)
-            self._generate_mining_schema(model_element)
-            return model_element
-
-    def _generate_mining_schema(self, parent):
-        mining_schema = ET.SubElement(parent, 'MiningSchema')
-        mining_field = ET.SubElement(mining_schema, 'MiningField')
-        if self.target_name:
-            mining_field.set('name', self.target_name)
-            mining_field.set('usageType', 'target')
-        for f in self.feature_names:
-            mining_field = ET.SubElement(mining_schema, 'MiningField')
-            mining_field.set('name', f)
-            mining_field.set('usageType', 'active')
-        return mining_schema
-
-    def _generate_output(self, parent):
-        output = ET.SubElement(parent, 'Output')
-        for t in self.target_values:
-            output_field = ET.SubElement(output, 'OutputField')
-            output_field.set('name', 'probability_{}'.format(t))
-            output_field.set('feature', 'probability')
-            output_field.set('value', t)
-        return output
+    @property
+    def model(self):
+        serializer = self._get_serializer(self.estimator)
+        return serializer.model
 
 
 def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
