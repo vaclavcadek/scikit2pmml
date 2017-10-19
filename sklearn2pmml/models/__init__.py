@@ -1,7 +1,13 @@
+import logging
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class Model:
@@ -31,6 +37,43 @@ class Model:
             mining_field.set('name', f)
             mining_field.set('usageType', 'active')
         return mining_schema
+
+    @property
+    def local_transformations(self):
+        transformer = self.pmml.transformer
+        if transformer:
+            local_transformations = ET.Element('LocalTransformation')
+            for i, f in enumerate(self.pmml.feature_names):
+                derived_field = ET.SubElement(local_transformations, 'DerivedField')
+                derived_field.set('optype', 'continuous')
+                derived_field.set('dataType', 'double')
+                derived_field.set('name', '{}*'.format(f))
+                if isinstance(transformer, StandardScaler):
+                    if transformer.mean_[i] == 0:
+                        norm_discrete = ET.SubElement(derived_field, 'NormDiscrete')
+                        norm_discrete.set('field', f)
+                        norm_discrete.set('value', '0.0')
+                        logging.warning('[!] {field} has zero mean, avoiding scaling. Check whether your data does not contains only one value!'.format(field=f))
+                    else:
+                        norm_continuous = ET.SubElement(derived_field, 'NormContinuous')
+                        norm_continuous.set('field', f)
+                        ln1 = ET.SubElement(norm_continuous, 'LinearNorm')
+                        ln2 = ET.SubElement(norm_continuous, 'LinearNorm')
+                        ln1.set('orig', '0.0')
+                        ln1.set('norm', (-transformer.mean_[i] / transformer.scale_[i]).astype(str))
+                        ln2.set('orig', (transformer.mean_[i]).astype(str))
+                        ln2.set('norm', '0.0')
+                elif isinstance(transformer, MinMaxScaler):
+                    norm_continuous = ET.SubElement(derived_field, 'NormContinuous')
+                    norm_continuous.set('field', f)
+                    ln1 = ET.SubElement(norm_continuous, 'LinearNorm')
+                    ln2 = ET.SubElement(norm_continuous, 'LinearNorm')
+                    ln1.set('orig', '0.0')
+                    ln1.set('norm', (- transformer.min_[i] / (transformer.data_max_[i] - transformer.min_[i])).astype(str))
+                    ln2.set('orig', (transformer.min_[i]).astype(str))
+                    ln2.set('norm', '0.0')
+            return local_transformations
+        return None
 
     @property
     def output(self):

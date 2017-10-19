@@ -110,8 +110,7 @@ class PMMLDocument:
 
     @property
     def model(self):
-        serializer = self._get_serializer(self.estimator)
-        return serializer.model
+        return self.serializer.model
 
 
 def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
