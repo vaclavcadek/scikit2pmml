@@ -24,6 +24,9 @@ setup(
         'SciPy>= 0.9',
         'scikit-learn>=0.17.1'
     ],
+    tests_require=[
+        'lxml',
+    ],
     classifiers=[
         'Intended Audience :: Science/Research',
         'Intended Audience :: Developers',

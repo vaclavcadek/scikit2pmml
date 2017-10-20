@@ -5,7 +5,7 @@ from sklearn.linear_model import LinearRegression
 
 boston = load_boston()
 X = boston.data.astype(np.float32)
-y = boston.target.astype(np.int32)
+y = boston.target.astype(np.float32)
 
 model = LinearRegression()
 model.fit(X, y)
@@ -16,7 +16,7 @@ params = {
     'target_name': 'median_value',
     'copyright': 'Václav Čadek',
     'description': 'Simple Linear Regression model.',
-    'model_name': 'Breast Cancer Model'
+    'model_name': 'Boston pricing model'
 }
 
 sklearn2pmml(estimator=model, file='boston.pmml', **params)

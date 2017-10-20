@@ -64,7 +64,8 @@ class PMMLDocument:
             self.target_values = ['y{}'.format(i) for i in range(self.serializer.n_classes)]
         logger.info('[x] Model validation successful.')
 
-    def generate_document(self, file):
+    @property
+    def document(self):
         self._validate_inputs()
         self.root = ET.Element('PMML')
         self.root.set('version', self.version)
@@ -74,8 +75,6 @@ class PMMLDocument:
         self.root.append(self.model)
         tree = ET.ElementTree(self.root)
         logger.info('[x] Generation of PMML successful.')
-        if file:
-            tree.write(file, encoding='utf-8', xml_declaration=True)
         return tree
 
     @property
@@ -124,7 +123,10 @@ def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
     :return: XML element tree
     """
 
-    document = PMMLDocument(estimator, transformer, **kwargs)
-    return document.generate_document(file)
+    pmml = PMMLDocument(estimator, transformer, **kwargs)
+    tree = pmml.document
+    if file:
+        tree.write(file, encoding='utf-8', xml_declaration=True)
+    return tree
 
 

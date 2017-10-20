@@ -32,7 +32,8 @@ class RegressionModel(Model):
         if self.local_transformations:
             regression_model.append(self.local_transformations)
         regression_table = ET.SubElement(regression_model, 'RegressionTable')
-        regression_table.set('intercept', str(self.estimator.intercept_[0]))
+        intercept = self.estimator.intercept_[0] if self.type == 'logisticRegression' else self.estimator.intercept_
+        regression_table.set('intercept', str(intercept))
         for feature, coefficient in zip(self.pmml.feature_names, self.estimator.coef_.ravel()):
             numeric_predictor = ET.SubElement(regression_table, 'NumericPredictor')
             numeric_predictor.set('name', '{}*'.format(feature) if self.local_transformations else feature)

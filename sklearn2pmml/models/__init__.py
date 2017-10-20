@@ -1,10 +1,9 @@
-import logging
-
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+import logging
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
