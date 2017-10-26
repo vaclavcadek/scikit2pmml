@@ -32,7 +32,7 @@ class PMMLDocument:
         self.feature_names = kwargs.get('feature_names', [])
         self.target_name = kwargs.get('target_name', 'class')
         self.target_values = kwargs.get('target_values', [])
-        self.version = kwargs.get('version', '4.2')
+        self.version = kwargs.get('pmml_version', '4.2')
         self.model_name = kwargs.get('model_name', None)
         self.description = kwargs.get('description', None)
         self.copyright = kwargs.get('copyright', None)

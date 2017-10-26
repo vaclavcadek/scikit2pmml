@@ -30,7 +30,7 @@ class Model:
         mining_field = ET.SubElement(mining_schema, 'MiningField')
         if self.pmml.target_name:
             mining_field.set('name', self.pmml.target_name)
-            mining_field.set('usageType', 'target' if self.function_name == 'classification' else 'predicted')
+            mining_field.set('usageType', 'predicted')
         for f in self.pmml.feature_names:
             mining_field = ET.SubElement(mining_schema, 'MiningField')
             mining_field.set('name', f)
@@ -79,6 +79,7 @@ class Model:
         output = ET.Element('Output')
         for t in self.pmml.target_values:
             output_field = ET.SubElement(output, 'OutputField')
+            output_field.set('dataType', 'double')
             output_field.set('name', 'probability_{}'.format(t))
             output_field.set('feature', 'probability')
             output_field.set('value', t)
