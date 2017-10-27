@@ -6,7 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
 
-class GenericFieldsTestCase(unittest.TestCase):
+class GenericModelTestCase(unittest.TestCase):
     def setUp(self):
         iris = load_iris()
 
