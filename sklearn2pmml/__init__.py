@@ -41,9 +41,9 @@ class PMMLDocument:
 
     def _get_serializer(self, estimator):
         if type(estimator) == LinearRegression:
-            return RegressionModel(estimator, self, 'regression', 'linearRegression')
+            return RegressionModel(estimator, self, 'regression', RegressionModel.LINEAR_REGRESSION)
         if type(estimator) == LogisticRegression:
-            return RegressionModel(estimator, self, 'classification', 'logisticRegression')
+            return RegressionModel(estimator, self, 'classification', RegressionModel.LOGISTIC_REGRESSION)
         if type(estimator) in [DecisionTreeClassifier, ExtraTreeClassifier]:
             return TreeModel(estimator, self, 'classification')
         if type(estimator) in [RandomForestClassifier, ExtraTreesClassifier]:

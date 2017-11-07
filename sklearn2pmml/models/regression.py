@@ -3,9 +3,13 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 from . import Model
+import numpy as np
 
 
 class RegressionModel(Model):
+
+    LINEAR_REGRESSION = 'linearRegression'
+    LOGISTIC_REGRESSION = 'logisticRegression'
 
     def __init__(self, estimator, pmml, function_name, type):
         super(RegressionModel, self).__init__(estimator, pmml, function_name)
@@ -32,7 +36,7 @@ class RegressionModel(Model):
         if self.local_transformations:
             regression_model.append(self.local_transformations)
         regression_table = ET.SubElement(regression_model, 'RegressionTable')
-        intercept = self.estimator.intercept_[0] if self.type == 'logisticRegression' else self.estimator.intercept_
+        intercept = np.atleast_1d(self.estimator.intercept_)[0]
         regression_table.set('intercept', str(intercept))
         for feature, coefficient in zip(self.pmml.feature_names, self.estimator.coef_.ravel()):
             numeric_predictor = ET.SubElement(regression_table, 'NumericPredictor')
