@@ -3,8 +3,8 @@ import unittest
 from sklearn.datasets import load_iris
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 
-from tests.models.generic import GenericModelMixin
-from tests.models.generic import SchemaValidationMixin
+from tests.generic import GenericModelMixin
+from tests.generic import SchemaValidationMixin
 
 
 class DecisionTreeClassifierTestCase(GenericModelMixin, SchemaValidationMixin, unittest.TestCase):

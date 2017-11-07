@@ -1,8 +1,10 @@
+import unittest
+
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
-from tests.models.generic import GenericModelMixin
-from tests.models.generic import SchemaValidationMixin
-import unittest
+
+from tests.generic import GenericModelMixin
+from tests.generic import SchemaValidationMixin
 
 
 class RandomForestClassifierTestCase(GenericModelMixin, SchemaValidationMixin, unittest.TestCase):

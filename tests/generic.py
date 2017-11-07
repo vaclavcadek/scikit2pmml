@@ -69,12 +69,12 @@ class SchemaValidationMixin:
 
     def test_schema_4_1(self):
         tree = sklearn2pmml(estimator=self.model, pmml_version='4.1')
-        self._validate_against_schema('../xsd/pmml-4-1.xsd', tree)
+        self._validate_against_schema('xsd/pmml-4-1.xsd', tree)
 
     def test_schema_4_2(self):
         tree = sklearn2pmml(estimator=self.model, pmml_version='4.2')
-        self._validate_against_schema('../xsd/pmml-4-2.xsd', tree)
+        self._validate_against_schema('xsd/pmml-4-2.xsd', tree)
 
     def test_schema_4_3(self):
         tree = sklearn2pmml(estimator=self.model, pmml_version='4.3')
-        self._validate_against_schema('../xsd/pmml-4-3.xsd', tree)
+        self._validate_against_schema('xsd/pmml-4-3.xsd', tree)
