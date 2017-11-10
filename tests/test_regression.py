@@ -11,7 +11,7 @@ from tests.generic import SchemaValidationMixin
 class LinearRegressionTestCase(GenericModelMixin, SchemaValidationMixin, unittest.TestCase):
 
     def setUp(self):
-        super().prepare_model(LinearRegression(), load_boston(), np.float32, np.float32)
+        super().prepare_model(LinearRegression(), load_boston())
 
     def test_model(self):
         pass
