@@ -49,6 +49,7 @@ class TreeModel(Model):
 
         tree_model = ET.Element('TreeModel')
         tree_model.append(self.mining_schema)
+        tree_model.append(self.output)
         tree_model.set('splitCharacteristic', 'binarySplit')
         tree_model.set('functionName', 'classification')
         split(0, 0, None, tree_model)
