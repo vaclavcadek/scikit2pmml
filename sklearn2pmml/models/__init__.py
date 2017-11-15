@@ -41,7 +41,7 @@ class Model:
     def local_transformations(self):
         transformer = self.pmml.transformer
         if transformer:
-            local_transformations = ET.Element('LocalTransformation')
+            local_transformations = ET.Element('LocalTransformations')
             for i, f in enumerate(self.pmml.feature_names):
                 derived_field = ET.SubElement(local_transformations, 'DerivedField')
                 derived_field.set('optype', 'continuous')
