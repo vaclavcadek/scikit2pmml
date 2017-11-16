@@ -4,4 +4,4 @@ machine:
 
 dependencies:
     pre:
-    - pip install --verbose lxml
+    - pip install --verbose lxml numpy scipy

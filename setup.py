@@ -25,7 +25,7 @@ setup(
         'scikit-learn>=0.17.1'
     ],
     tests_require=[
-        'lxml', 'nose'
+        'lxml'
     ],
     classifiers=[
         'Intended Audience :: Science/Research',
