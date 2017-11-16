@@ -4,7 +4,7 @@ except ImportError:
     import xml.etree.ElementTree as ET
 import unittest
 from lxml import etree
-from sklearn2pmml import sklearn2pmml
+from scikit2pmml import scikit2pmml
 from sklearn.datasets import load_iris, load_breast_cancer, load_boston
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
@@ -23,15 +23,15 @@ class SchemaValidationTestCase:
         etree.fromstring(ET.tostring(pmml.getroot(), encoding='utf-8', method='xml'), parser)
 
     def test_schema_4_1(self):
-        tree = sklearn2pmml(estimator=self.model, pmml_version='4.1')
+        tree = scikit2pmml(estimator=self.model, pmml_version='4.1')
         self._validate_against_schema('xsd/pmml-4-1.xsd', tree)
 
     def test_schema_4_2(self):
-        tree = sklearn2pmml(estimator=self.model, pmml_version='4.2')
+        tree = scikit2pmml(estimator=self.model, pmml_version='4.2')
         self._validate_against_schema('xsd/pmml-4-2.xsd', tree)
 
     def test_schema_4_3(self):
-        tree = sklearn2pmml(estimator=self.model, pmml_version='4.3')
+        tree = scikit2pmml(estimator=self.model, pmml_version='4.3')
         self._validate_against_schema('xsd/pmml-4-3.xsd', tree)
 
 

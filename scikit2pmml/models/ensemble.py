@@ -3,7 +3,7 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 from . import Model
-from sklearn2pmml import TreeModel
+from scikit2pmml import TreeModel
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier
 
 

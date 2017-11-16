@@ -1,4 +1,4 @@
-from sklearn2pmml import sklearn2pmml
+from scikit2pmml import scikit2pmml
 from sklearn.datasets import load_iris
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -20,4 +20,4 @@ params = {
     'model_name': 'Iris Model'
 }
 
-sklearn2pmml(estimator=model, file='iris.pmml', **params)
+scikit2pmml(estimator=model, file='iris.pmml', **params)

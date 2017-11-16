@@ -9,14 +9,14 @@ with open('README.rst') as readme_file:
     long_description = readme_file.read()
 
 setup(
-    name='sklearn2pmml',
+    name='scikit2pmml',
     version='0.0.1',
-    packages=['sklearn2pmml'],
+    packages=['scikit2pmml', 'scikit2pmml.models'],
     include_package_data=True,
     license='MIT',
     description='Simple exporter of sklearn models into PMML.',
     long_description=long_description,
-    url='https://github.com/vaclavcadek/sklearn2pmml',
+    url='https://github.com/vaclavcadek/scikit2pmml',
     author='Václav Čadek',
     author_email='vaclavcadek@gmail.com',
     install_requires=[
@@ -25,7 +25,7 @@ setup(
         'scikit-learn>=0.17.1'
     ],
     tests_require=[
-        'lxml',
+        'lxml', 'nose'
     ],
     classifiers=[
         'Intended Audience :: Science/Research',

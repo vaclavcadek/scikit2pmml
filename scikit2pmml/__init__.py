@@ -2,9 +2,9 @@ try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
-from sklearn2pmml.models.tree import TreeModel
-from sklearn2pmml.models.ensemble import Segmentation
-from sklearn2pmml.models.regression import RegressionModel
+from scikit2pmml.models.tree import TreeModel
+from scikit2pmml.models.ensemble import Segmentation
+from scikit2pmml.models.regression import RegressionModel
 from datetime import datetime
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
@@ -112,7 +112,7 @@ class PMMLDocument:
         return self.serializer.model
 
 
-def sklearn2pmml(estimator, transformer=None, file=None, **kwargs):
+def scikit2pmml(estimator, transformer=None, file=None, **kwargs):
     """
     Exports sklearn model as PMML.
 

@@ -1,4 +1,4 @@
-from sklearn2pmml import sklearn2pmml
+from scikit2pmml import scikit2pmml
 from sklearn.datasets import load_breast_cancer
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -23,4 +23,4 @@ params = {
     'model_name': 'Breast Cancer Model'
 }
 
-sklearn2pmml(estimator=model, transformer=std, file='cancer.pmml', **params)
+scikit2pmml(estimator=model, transformer=std, file='cancer.pmml', **params)

@@ -1,4 +1,4 @@
-from sklearn2pmml import sklearn2pmml
+from scikit2pmml import scikit2pmml
 from sklearn.datasets import load_boston
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -19,4 +19,4 @@ params = {
     'model_name': 'Boston pricing model'
 }
 
-sklearn2pmml(estimator=model, file='boston.pmml', **params)
+scikit2pmml(estimator=model, file='boston.pmml', **params)
