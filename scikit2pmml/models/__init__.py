@@ -5,7 +5,6 @@ except ImportError:
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
