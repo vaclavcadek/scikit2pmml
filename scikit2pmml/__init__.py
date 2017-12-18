@@ -12,7 +12,6 @@ from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SUPPORTED_TRANSFORMERS = frozenset([StandardScaler, MinMaxScaler])
