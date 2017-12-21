@@ -10,7 +10,7 @@ with open('README.rst') as readme_file:
 
 setup(
     name='scikit2pmml',
-    version='0.0.1',
+    version='0.0.2',
     packages=['scikit2pmml', 'scikit2pmml.models'],
     include_package_data=True,
     license='MIT',
